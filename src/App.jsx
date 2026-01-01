@@ -14,6 +14,17 @@ import {
 /****************************
  * 1. CONFIG & DATA
  ****************************/
+
+// Definisi Detail Kriteria untuk Tabel Informasi
+const criteriaInfo = [
+  { code: "C1", key: "sanitasi", label: "Sanitasi Layak", weight: 0.20, type: "Benefit", reason: "Infrastruktur dasar utama pencegahan penyakit." },
+  { code: "C2", key: "air", label: "Air Minum Layak", weight: 0.20, type: "Benefit", reason: "Kebutuhan vital untuk kehidupan higienis." },
+  { code: "C3", key: "diare", label: "Prevalensi Diare", weight: 0.20, type: "Cost", reason: "Indikator dampak kesehatan jangka pendek (akut)." },
+  { code: "C4", key: "stunting", label: "Prevalensi Stunting", weight: 0.20, type: "Cost", reason: "Indikator dampak kesehatan jangka panjang (kronis)." },
+  { code: "C5", key: "iklh", label: "Indeks Lingkungan (IKLH)", weight: 0.10, type: "Benefit", reason: "Indikator makro kualitas ekosistem daerah." },
+  { code: "C6", key: "kepadatan", label: "Kepadatan Penduduk", weight: 0.10, type: "Cost", reason: "Faktor risiko yang mempercepat penularan wabah." },
+];
+
 const dataProvinsi = [
   { prov: "Aceh", sanitasi: 78.85, air: 89.74, diare: 4.2, stunting: 29.4, iklh: 78.53, kepadatan: 96 },
   { prov: "Sumatera Utara", sanitasi: 84.18, air: 92.19, diare: 4.7, stunting: 18.9, iklh: 72.80, kepadatan: 212 },
@@ -49,19 +60,15 @@ const dataProvinsi = [
   { prov: "Maluku Utara", sanitasi: 80.64, air: 89.01, diare: 2.9, stunting: 23.7, iklh: 80.36, kepadatan: 41 },
   { prov: "Papua Barat", sanitasi: 76.30, air: 81.57, diare: 3.1, stunting: 24.8, iklh: 83.31, kepadatan: 12 },
   { prov: "Papua", sanitasi: 43.00, air: 66.49, diare: 4.1, stunting: 28.6, iklh: 81.31, kepadatan: 14 }
-
 ];
 
-const weights = {
-  sanitasi: 0.2,
-  air: 0.2,
-  diare: 0.2,
-  stunting: 0.2,
-  iklh: 0.1,
-  kepadatan: 0.1
-};
+// Mapping weights untuk perhitungan (diambil dari criteriaInfo)
+const weights = criteriaInfo.reduce((acc, curr) => {
+  acc[curr.key] = curr.weight;
+  return acc;
+}, {});
 
-const costCriteria = ["diare", "stunting", "kepadatan"];
+const costCriteria = criteriaInfo.filter(c => c.type === "Cost").map(c => c.key);
 
 /****************************
  * 2. COMPONENTS (CUSTOM UI)
@@ -93,7 +100,7 @@ const Card = ({ children, className = "" }) => (
 );
 
 const Badge = ({ type, text }) => {
-  const styles = type === 'cost' 
+  const styles = type === 'Cost' 
     ? "bg-rose-50 text-rose-600 border-rose-100" 
     : "bg-emerald-50 text-emerald-600 border-emerald-100";
   return (
@@ -119,7 +126,7 @@ export default function App() {
       min[k] = Math.min(...dataProvinsi.map(d => d[k]));
     });
 
-    // 2. LOGIKA SAW (Detailed Trace)
+    // 2. LOGIKA SAW
     const sawResult = dataProvinsi.map(d => {
       let score = 0;
       const detail = {};
@@ -153,7 +160,7 @@ export default function App() {
       return { prov: d.prov, score: Number(score.toFixed(4)), detail };
     });
 
-    // 3. LOGIKA SMART (Detailed Trace)
+    // 3. LOGIKA SMART
     const smartResult = dataProvinsi.map(d => {
       let score = 0;
       const detail = {};
@@ -167,10 +174,10 @@ export default function App() {
 
         if (isCost) {
           util = (max[k] - val) / range;
-          formulaTrace = `(${max[k]} - ${val}) / ${range}`;
+          formulaTrace = `(${max[k]} - ${val}) / ${range.toFixed(2)}`;
         } else {
           util = (val - min[k]) / range;
-          formulaTrace = `(${val} - ${min[k]}) / ${range}`;
+          formulaTrace = `(${val} - ${min[k]}) / ${range.toFixed(2)}`;
         }
 
         const weighted = util * weights[k];
@@ -241,7 +248,49 @@ export default function App() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
-        {/* --- SECTION 1: DATASET --- */}
+        {/* --- SECTION 1: KRITERIA & BOBOT (BARU) --- */}
+        <section>
+          <div className="flex items-center justify-between mb-4 px-1">
+            <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
+              <span className="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
+              Kriteria & Bobot
+            </h2>
+            <div className="text-xs text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 shadow-sm font-medium">
+              Total Bobot: 1.0 (100%)
+            </div>
+          </div>
+
+          <Card>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
+                  <tr>
+                    <th className="px-6 py-3 font-semibold">Kode</th>
+                    <th className="px-6 py-3 font-semibold">Kriteria</th>
+                    <th className="px-6 py-3 font-semibold">Atribut</th>
+                    <th className="px-6 py-3 font-semibold">Bobot</th>
+                    <th className="px-6 py-3 font-semibold">Alasan / Justifikasi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {criteriaInfo.map((c, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50">
+                      <td className="px-6 py-3 font-mono text-slate-500 font-bold">{c.code}</td>
+                      <td className="px-6 py-3 font-medium text-slate-700">{c.label}</td>
+                      <td className="px-6 py-3">
+                        <Badge type={c.type} text={c.type} />
+                      </td>
+                      <td className="px-6 py-3 font-mono font-bold text-slate-600">{c.weight}</td>
+                      <td className="px-6 py-3 text-slate-500 italic text-xs">{c.reason}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </section>
+
+        {/* --- SECTION 2: DATASET --- */}
         <section>
           <div className="flex items-center justify-between mb-4 px-1">
             <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
@@ -259,14 +308,11 @@ export default function App() {
                 <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
                   <tr>
                     <th className="px-6 py-4 font-semibold">Provinsi</th>
-                    {Object.keys(weights).map(h => (
-                      <th key={h} className="px-6 py-4 font-semibold text-center">
+                    {criteriaInfo.map(h => (
+                      <th key={h.key} className="px-6 py-4 font-semibold text-center">
                         <div className="flex flex-col items-center gap-1">
-                          {h}
-                          <Badge 
-                            type={costCriteria.includes(h) ? 'cost' : 'benefit'} 
-                            text={costCriteria.includes(h) ? 'Cost' : 'Benefit'} 
-                          />
+                          {h.key}
+                          <Badge type={h.type} text={h.type} />
                         </div>
                       </th>
                     ))}
@@ -276,9 +322,9 @@ export default function App() {
                   {dataProvinsi.map((p, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4 font-medium text-slate-700">{p.prov}</td>
-                      {Object.keys(weights).map((key, i) => (
+                      {criteriaInfo.map((h, i) => (
                         <td key={i} className="px-6 py-4 text-center text-slate-600 font-mono">
-                          {p[key]}
+                          {p[h.key]}
                         </td>
                       ))}
                     </tr>
@@ -291,7 +337,7 @@ export default function App() {
 
         {showResult && calculationSteps && (
           <>
-            {/* --- SECTION 2: COMPARISON CHART & TABLE --- */}
+            {/* --- SECTION 3: COMPARISON CHART & TABLE --- */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
               {/* RANKING TABLE */}
@@ -380,7 +426,7 @@ export default function App() {
               </Card>
             </div>
 
-            {/* --- SECTION 3: DETAILED CALCULATION LOG --- */}
+            {/* --- SECTION 4: DETAILED CALCULATION LOG --- */}
             <div className="mt-10">
               <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2 mb-4">
                 <span className="w-1.5 h-6 bg-slate-400 rounded-full"></span>
@@ -403,7 +449,6 @@ export default function App() {
                   <div className="space-y-4">
                     {calculationSteps.saw.map((s) => (
                       <Card key={s.prov} className="p-0 border-indigo-100 flex flex-col">
-                        {/* Header Card */}
                         <div className="px-4 py-3 bg-indigo-50/50 border-b border-indigo-100 flex justify-between items-center">
                           <span className="font-bold text-indigo-900">{s.prov}</span>
                           <span className="bg-indigo-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">
@@ -411,7 +456,6 @@ export default function App() {
                           </span>
                         </div>
                         
-                        {/* Body Details */}
                         <div className="p-4 grid gap-4 flex-grow">
                           {Object.entries(s.detail).map(([k, v]) => (
                             <div key={k} className="text-xs grid grid-cols-12 gap-2 items-center border-b border-dashed border-slate-200 pb-2 last:border-0 last:pb-0">
@@ -438,7 +482,6 @@ export default function App() {
                           ))}
                         </div>
 
-                        {/* Footer: Pembuktian Penjumlahan */}
                         <div className="bg-indigo-50/80 p-3 border-t border-indigo-100 text-xs">
                            <div className="flex items-center gap-2 mb-1">
                               <span className="font-bold text-indigo-900">🔢 Pembuktian Total Skor:</span>
@@ -468,7 +511,6 @@ export default function App() {
                   <div className="space-y-4">
                     {calculationSteps.smart.map((s) => (
                       <Card key={s.prov} className="p-0 border-fuchsia-100 flex flex-col">
-                        {/* Header Card */}
                         <div className="px-4 py-3 bg-fuchsia-50/50 border-b border-fuchsia-100 flex justify-between items-center">
                           <span className="font-bold text-fuchsia-900">{s.prov}</span>
                           <span className="bg-fuchsia-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">
@@ -476,7 +518,6 @@ export default function App() {
                           </span>
                         </div>
 
-                        {/* Body Details */}
                         <div className="p-4 grid gap-4 flex-grow">
                           {Object.entries(s.detail).map(([k, v]) => (
                             <div key={k} className="text-xs grid grid-cols-12 gap-2 items-center border-b border-dashed border-slate-200 pb-2 last:border-0 last:pb-0">
@@ -503,7 +544,6 @@ export default function App() {
                           ))}
                         </div>
 
-                        {/* Footer: Pembuktian Penjumlahan */}
                         <div className="bg-fuchsia-50/80 p-3 border-t border-fuchsia-100 text-xs">
                            <div className="flex items-center gap-2 mb-1">
                               <span className="font-bold text-fuchsia-900">🔢 Pembuktian Total Skor:</span>
