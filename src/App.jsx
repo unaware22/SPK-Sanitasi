@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -81,10 +81,10 @@ const CustomTooltip = ({ active, payload, label }) => {
         <p className="font-bold text-slate-700 mb-2">{label}</p>
         <div className="space-y-1">
           <p className="text-sm text-indigo-600 font-medium">
-            SAW: <span className="font-mono text-slate-600">{payload[0].value}</span>
+            SAW: <span className="font-mono text-slate-600">{payload[0]?.value}</span>
           </p>
           <p className="text-sm text-fuchsia-600 font-medium">
-            SMART: <span className="font-mono text-slate-600">{payload[1].value}</span>
+            SMART: <span className="font-mono text-slate-600">{payload[1]?.value}</span>
           </p>
         </div>
       </div>
@@ -117,6 +117,9 @@ export default function App() {
   const [showResult, setShowResult] = useState(false);
   const [calculationSteps, setCalculationSteps] = useState(null);
   const [finalRanking, setFinalRanking] = useState([]);
+  
+  // STATE BARU: Untuk melacak metode sorting yang aktif
+  const [sortBy, setSortBy] = useState('SAW'); // Default 'SAW'
 
   const handleCalculate = () => {
     // 1. Min/Max Global
@@ -195,7 +198,7 @@ export default function App() {
       return { prov: d.prov, score: Number(score.toFixed(4)), detail };
     });
 
-    // 4. Combine & Sort
+    // 4. Combine & Initial Sort (Default by SAW)
     const combined = sawResult.map(s => {
       const sItem = smartResult.find(x => x.prov === s.prov);
       return {
@@ -205,11 +208,19 @@ export default function App() {
         detailSAW: s.detail,
         detailSMART: sItem?.detail
       };
-    }).sort((a, b) => b.SAW - a.SAW);
+    }).sort((a, b) => b.SAW - a.SAW); // Default sort SAW saat pertama kali hitung
 
     setCalculationSteps({ max, min, saw: sawResult, smart: smartResult });
     setFinalRanking(combined);
     setShowResult(true);
+    setSortBy('SAW'); // Reset sort to default
+  };
+
+  // FUNGSI BARU: Menangani Perubahan Sort
+  const handleSortChange = (method) => {
+    setSortBy(method);
+    const sortedData = [...finalRanking].sort((a, b) => b[method] - a[method]);
+    setFinalRanking(sortedData);
   };
 
   return (
@@ -248,7 +259,7 @@ export default function App() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
-        {/* --- SECTION 1: KRITERIA & BOBOT (BARU) --- */}
+        {/* --- SECTION 1: KRITERIA & BOBOT --- */}
         <section>
           <div className="flex items-center justify-between mb-4 px-1">
             <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
@@ -341,31 +352,62 @@ export default function App() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
               {/* RANKING TABLE */}
-              <Card className="lg:col-span-1 h-fit">
-                <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-                  <h3 className="font-bold text-slate-700">🏆 Hasil Perangkingan</h3>
-                  <p className="text-xs text-slate-500 mt-1">Diurutkan berdasarkan skor tertinggi (SAW)</p>
+              <Card className="lg:col-span-1 h-fit flex flex-col">
+                <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-3">
+                  <div>
+                    <h3 className="font-bold text-slate-700">🏆 Hasil Perangkingan</h3>
+                    <p className="text-xs text-slate-500 mt-1">Pilih metode sorting di bawah ini:</p>
+                  </div>
+                  
+                  {/* FEATURE ADDED: SORTING TOGGLE */}
+                  <div className="flex bg-slate-200 p-1 rounded-lg">
+                    <button 
+                      onClick={() => handleSortChange('SAW')}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+                        sortBy === 'SAW' 
+                        ? 'bg-white text-indigo-600 shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      Berdasarkan SAW
+                    </button>
+                    <button 
+                      onClick={() => handleSortChange('SMART')}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+                        sortBy === 'SMART' 
+                        ? 'bg-white text-fuchsia-600 shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      Berdasarkan SMART
+                    </button>
+                  </div>
                 </div>
+
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
                       <tr>
                         <th className="px-4 py-3 text-left w-12">#</th>
                         <th className="px-4 py-3 text-left">Provinsi</th>
-                        <th className="px-4 py-3 text-right text-indigo-600">SAW</th>
-                        <th className="px-4 py-3 text-right text-fuchsia-600">SMART</th>
+                        <th className={`px-4 py-3 text-right ${sortBy === 'SAW' ? 'bg-indigo-50 text-indigo-700' : ''}`}>SAW</th>
+                        <th className={`px-4 py-3 text-right ${sortBy === 'SMART' ? 'bg-fuchsia-50 text-fuchsia-700' : ''}`}>SMART</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {finalRanking.map((item, idx) => (
-                        <tr key={item.prov} className={`hover:bg-indigo-50/30 transition-colors ${idx === 0 ? 'bg-yellow-50/50' : ''}`}>
+                        <tr key={item.prov} className={`hover:bg-slate-50/50 transition-colors ${idx === 0 ? 'bg-yellow-50/30' : ''}`}>
                           <td className="px-4 py-3 font-bold text-slate-400">{idx + 1}</td>
                           <td className="px-4 py-3 font-medium text-slate-700">
                             {item.prov}
                             {idx === 0 && <span className="ml-2 text-xs">👑</span>}
                           </td>
-                          <td className="px-4 py-3 text-right font-mono font-bold text-indigo-600">{item.SAW}</td>
-                          <td className="px-4 py-3 text-right font-mono font-bold text-fuchsia-600">{item.SMART}</td>
+                          <td className={`px-4 py-3 text-right font-mono font-bold ${sortBy === 'SAW' ? 'text-indigo-700' : 'text-slate-400'}`}>
+                            {item.SAW}
+                          </td>
+                          <td className={`px-4 py-3 text-right font-mono font-bold ${sortBy === 'SMART' ? 'text-fuchsia-700' : 'text-slate-400'}`}>
+                            {item.SMART}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -378,7 +420,7 @@ export default function App() {
                 <div className="p-5 border-b border-slate-100 flex justify-between items-center">
                   <div>
                     <h3 className="font-bold text-slate-700">Visualisasi Perbandingan</h3>
-                    <p className="text-xs text-slate-500 mt-1">Sensitivitas metode terhadap data ekstrim</p>
+                    <p className="text-xs text-slate-500 mt-1">Data diurutkan berdasarkan metode: <span className="font-bold uppercase text-slate-700">{sortBy}</span></p>
                   </div>
                   <div className="flex gap-2 text-xs font-medium">
                     <div className="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-1 rounded">
@@ -391,14 +433,18 @@ export default function App() {
                 </div>
                 <div className="p-6 flex-1 min-h-[350px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={finalRanking} barGap={8}>
+                    <BarChart data={finalRanking} barGap={0}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                       <XAxis 
                         dataKey="prov" 
                         axisLine={false} 
                         tickLine={false} 
-                        tick={{fill: '#64748b', fontSize: 12}} 
+                        tick={{fill: '#64748b', fontSize: 10}} 
                         dy={10}
+                        interval={0}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
                       />
                       <YAxis 
                         axisLine={false} 
@@ -409,16 +455,16 @@ export default function App() {
                       <Bar 
                         dataKey="SAW" 
                         fill="#6366f1" 
-                        radius={[6, 6, 0, 0]} 
-                        barSize={30}
-                        activeBar={<Rectangle fill="#4f46e5" stroke="#4f46e5" />}
+                        radius={[4, 4, 0, 0]} 
+                        // Jika sorted by SAW, highlight bar ini
+                        fillOpacity={sortBy === 'SAW' ? 1 : 0.4}
                       />
                       <Bar 
                         dataKey="SMART" 
                         fill="#d946ef" 
-                        radius={[6, 6, 0, 0]} 
-                        barSize={30}
-                        activeBar={<Rectangle fill="#c026d3" stroke="#c026d3" />}
+                        radius={[4, 4, 0, 0]} 
+                         // Jika sorted by SMART, highlight bar ini
+                        fillOpacity={sortBy === 'SMART' ? 1 : 0.4}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -432,6 +478,9 @@ export default function App() {
                 <span className="w-1.5 h-6 bg-slate-400 rounded-full"></span>
                 Rincian Langkah Perhitungan (Step-by-Step)
               </h2>
+              <p className="text-sm text-slate-500 mb-6 bg-slate-100 p-3 rounded-lg border border-slate-200">
+                ℹ️ Catatan: Urutan tampilan di bawah ini tetap mengikuti urutan abjad/awal data, bukan hasil ranking, agar lebih mudah mengecek rumus per provinsi.
+              </p>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                 
@@ -480,17 +529,6 @@ export default function App() {
                               </div>
                             </div>
                           ))}
-                        </div>
-
-                        <div className="bg-indigo-50/80 p-3 border-t border-indigo-100 text-xs">
-                           <div className="flex items-center gap-2 mb-1">
-                              <span className="font-bold text-indigo-900">🔢 Pembuktian Total Skor:</span>
-                              <span className="text-[10px] text-indigo-500">(Jumlah semua hasil bobot)</span>
-                           </div>
-                           <div className="font-mono text-slate-600 break-all leading-relaxed">
-                              {Object.values(s.detail).map(d => d.resWeight).join(" + ")} 
-                              <span className="font-bold text-indigo-700 ml-2">= {s.score}</span>
-                           </div>
                         </div>
                       </Card>
                     ))}
@@ -542,17 +580,6 @@ export default function App() {
                               </div>
                             </div>
                           ))}
-                        </div>
-
-                        <div className="bg-fuchsia-50/80 p-3 border-t border-fuchsia-100 text-xs">
-                           <div className="flex items-center gap-2 mb-1">
-                              <span className="font-bold text-fuchsia-900">🔢 Pembuktian Total Skor:</span>
-                              <span className="text-[10px] text-fuchsia-500">(Jumlah semua hasil bobot)</span>
-                           </div>
-                           <div className="font-mono text-slate-600 break-all leading-relaxed">
-                              {Object.values(s.detail).map(d => d.resWeight).join(" + ")} 
-                              <span className="font-bold text-fuchsia-700 ml-2">= {s.score}</span>
-                           </div>
                         </div>
                       </Card>
                     ))}
