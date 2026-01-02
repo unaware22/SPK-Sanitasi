@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -6,16 +6,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Rectangle
+  ResponsiveContainer
 } from "recharts";
 
 /****************************
  * 1. CONFIG & DATA
  ****************************/
 
-// Definisi Detail Kriteria untuk Tabel Informasi
 const criteriaInfo = [
   { code: "C1", key: "sanitasi", label: "Sanitasi Layak", weight: 0.20, type: "Benefit", reason: "Infrastruktur dasar utama pencegahan penyakit." },
   { code: "C2", key: "air", label: "Air Minum Layak", weight: 0.20, type: "Benefit", reason: "Kebutuhan vital untuk kehidupan higienis." },
@@ -62,7 +59,6 @@ const dataProvinsi = [
   { prov: "Papua", sanitasi: 43.00, air: 66.49, diare: 4.1, stunting: 28.6, iklh: 81.31, kepadatan: 14 }
 ];
 
-// Mapping weights untuk perhitungan (diambil dari criteriaInfo)
 const weights = criteriaInfo.reduce((acc, curr) => {
   acc[curr.key] = curr.weight;
   return acc;
@@ -117,9 +113,7 @@ export default function App() {
   const [showResult, setShowResult] = useState(false);
   const [calculationSteps, setCalculationSteps] = useState(null);
   const [finalRanking, setFinalRanking] = useState([]);
-  
-  // STATE BARU: Untuk melacak metode sorting yang aktif
-  const [sortBy, setSortBy] = useState('SAW'); // Default 'SAW'
+  const [sortBy, setSortBy] = useState('SAW');
 
   const handleCalculate = () => {
     // 1. Min/Max Global
@@ -198,7 +192,7 @@ export default function App() {
       return { prov: d.prov, score: Number(score.toFixed(4)), detail };
     });
 
-    // 4. Combine & Initial Sort (Default by SAW)
+    // 4. Combine & Initial Sort
     const combined = sawResult.map(s => {
       const sItem = smartResult.find(x => x.prov === s.prov);
       return {
@@ -208,15 +202,14 @@ export default function App() {
         detailSAW: s.detail,
         detailSMART: sItem?.detail
       };
-    }).sort((a, b) => b.SAW - a.SAW); // Default sort SAW saat pertama kali hitung
+    }).sort((a, b) => b.SAW - a.SAW);
 
     setCalculationSteps({ max, min, saw: sawResult, smart: smartResult });
     setFinalRanking(combined);
     setShowResult(true);
-    setSortBy('SAW'); // Reset sort to default
+    setSortBy('SAW'); 
   };
 
-  // FUNGSI BARU: Menangani Perubahan Sort
   const handleSortChange = (method) => {
     setSortBy(method);
     const sortedData = [...finalRanking].sort((a, b) => b[method] - a[method]);
@@ -359,7 +352,7 @@ export default function App() {
                     <p className="text-xs text-slate-500 mt-1">Pilih metode sorting di bawah ini:</p>
                   </div>
                   
-                  {/* FEATURE ADDED: SORTING TOGGLE */}
+                  {/* SORTING TOGGLE */}
                   <div className="flex bg-slate-200 p-1 rounded-lg">
                     <button 
                       onClick={() => handleSortChange('SAW')}
@@ -456,14 +449,12 @@ export default function App() {
                         dataKey="SAW" 
                         fill="#6366f1" 
                         radius={[4, 4, 0, 0]} 
-                        // Jika sorted by SAW, highlight bar ini
                         fillOpacity={sortBy === 'SAW' ? 1 : 0.4}
                       />
                       <Bar 
                         dataKey="SMART" 
                         fill="#d946ef" 
                         radius={[4, 4, 0, 0]} 
-                         // Jika sorted by SMART, highlight bar ini
                         fillOpacity={sortBy === 'SMART' ? 1 : 0.4}
                       />
                     </BarChart>
@@ -479,7 +470,7 @@ export default function App() {
                 Rincian Langkah Perhitungan (Step-by-Step)
               </h2>
               <p className="text-sm text-slate-500 mb-6 bg-slate-100 p-3 rounded-lg border border-slate-200">
-                ℹ️ Catatan: Urutan tampilan di bawah ini tetap mengikuti urutan abjad/awal data, bukan hasil ranking, agar lebih mudah mengecek rumus per provinsi.
+                ℹ️ Catatan: Urutan tampilan di bawah ini tetap mengikuti urutan abjad/awal data agar mudah dicek.
               </p>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -501,7 +492,7 @@ export default function App() {
                         <div className="px-4 py-3 bg-indigo-50/50 border-b border-indigo-100 flex justify-between items-center">
                           <span className="font-bold text-indigo-900">{s.prov}</span>
                           <span className="bg-indigo-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">
-                            Score Akhir: {s.score}
+                            Score SAW: {s.score}
                           </span>
                         </div>
                         
@@ -530,6 +521,13 @@ export default function App() {
                             </div>
                           ))}
                         </div>
+
+                        {/* --- ADDED FEATURE: TOTAL SUMMATION --- */}
+                        <div className="px-4 py-3 bg-indigo-50/30 border-t border-indigo-100 text-xs text-slate-600 font-mono break-words leading-relaxed">
+                            <span className="font-bold text-indigo-700 uppercase mr-1">Σ Total:</span>
+                            {Object.values(s.detail).map(v => v.resWeight).join(" + ")}
+                            <span className="font-bold text-indigo-700 ml-1"> = {s.score}</span>
+                        </div>
                       </Card>
                     ))}
                   </div>
@@ -541,7 +539,6 @@ export default function App() {
                     <h3 className="font-bold text-lg">Perhitungan Metode SMART</h3>
                     <div className="mt-3 bg-fuchsia-500/40 p-3 rounded-lg text-xs font-mono border border-fuchsia-400/30 space-y-1">
                       <p>Utility: U = (Nilai - Min) / (Max - Min)</p>
-                      <p className="opacity-80 italic">*Untuk Cost, posisi pembilang dibalik</p>
                       <p>Score = Σ (Nilai Hasil Bobot)</p>
                     </div>
                   </div>
@@ -552,7 +549,7 @@ export default function App() {
                         <div className="px-4 py-3 bg-fuchsia-50/50 border-b border-fuchsia-100 flex justify-between items-center">
                           <span className="font-bold text-fuchsia-900">{s.prov}</span>
                           <span className="bg-fuchsia-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">
-                            Score Akhir: {s.score}
+                            Score SMART: {s.score}
                           </span>
                         </div>
 
@@ -580,6 +577,13 @@ export default function App() {
                               </div>
                             </div>
                           ))}
+                        </div>
+
+                        {/* --- ADDED FEATURE: TOTAL SUMMATION --- */}
+                        <div className="px-4 py-3 bg-fuchsia-50/30 border-t border-fuchsia-100 text-xs text-slate-600 font-mono break-words leading-relaxed">
+                            <span className="font-bold text-fuchsia-700 uppercase mr-1">Σ Total:</span>
+                            {Object.values(s.detail).map(v => v.resWeight).join(" + ")}
+                            <span className="font-bold text-fuchsia-700 ml-1"> = {s.score}</span>
                         </div>
                       </Card>
                     ))}
