@@ -10,16 +10,16 @@ import {
 } from "recharts";
 
 /****************************
- * 1. CONFIG & DATA
+ * 1. DATA INITIAL (DEFAULT)
  ****************************/
 
-const criteriaInfo = [
-  { code: "C1", key: "sanitasi", label: "Sanitasi Layak", weight: 0.20, type: "Benefit", reason: "Infrastruktur dasar utama pencegahan penyakit." },
-  { code: "C2", key: "air", label: "Air Minum Layak", weight: 0.20, type: "Benefit", reason: "Kebutuhan vital untuk kehidupan higienis." },
-  { code: "C3", key: "diare", label: "Prevalensi Diare", weight: 0.20, type: "Cost", reason: "Indikator dampak kesehatan jangka pendek (akut)." },
-  { code: "C4", key: "stunting", label: "Prevalensi Stunting", weight: 0.20, type: "Cost", reason: "Indikator dampak kesehatan jangka panjang (kronis)." },
-  { code: "C5", key: "iklh", label: "Indeks Lingkungan (IKLH)", weight: 0.10, type: "Benefit", reason: "Indikator makro kualitas ekosistem daerah." },
-  { code: "C6", key: "kepadatan", label: "Kepadatan Penduduk", weight: 0.10, type: "Cost", reason: "Faktor risiko yang mempercepat penularan wabah." },
+const initialCriteria = [
+  { id: 1, code: "C1", key: "sanitasi", label: "Sanitasi Layak", weight: 0.20, type: "Benefit", reason: "Infrastruktur dasar utama pencegahan penyakit." },
+  { id: 2, code: "C2", key: "air", label: "Air Minum Layak", weight: 0.20, type: "Benefit", reason: "Kebutuhan vital untuk kehidupan higienis." },
+  { id: 3, code: "C3", key: "diare", label: "Prevalensi Diare", weight: 0.20, type: "Cost", reason: "Indikator dampak kesehatan jangka pendek." },
+  { id: 4, code: "C4", key: "stunting", label: "Prevalensi Stunting", weight: 0.20, type: "Cost", reason: "Indikator dampak kesehatan jangka panjang." },
+  { id: 5, code: "C5", key: "iklh", label: "Indeks Lingkungan", weight: 0.10, type: "Benefit", reason: "Indikator makro kualitas ekosistem daerah." },
+  { id: 6, code: "C6", key: "kepadatan", label: "Kepadatan Penduduk", weight: 0.10, type: "Cost", reason: "Faktor risiko yang mempercepat penularan." },
 ];
 
 const dataProvinsi = [
@@ -58,13 +58,6 @@ const dataProvinsi = [
   { prov: "Papua Barat", sanitasi: 76.30, air: 81.57, diare: 3.1, stunting: 24.8, iklh: 83.31, kepadatan: 12 },
   { prov: "Papua", sanitasi: 43.00, air: 66.49, diare: 4.1, stunting: 28.6, iklh: 81.31, kepadatan: 14 }
 ];
-
-const weights = criteriaInfo.reduce((acc, curr) => {
-  acc[curr.key] = curr.weight;
-  return acc;
-}, {});
-
-const costCriteria = criteriaInfo.filter(c => c.type === "Cost").map(c => c.key);
 
 /****************************
  * 2. COMPONENTS (CUSTOM UI)
@@ -110,25 +103,55 @@ const Badge = ({ type, text }) => {
  * 3. MAIN COMPONENT
  ****************************/
 export default function App() {
+  // --- STATE MANAGEMENT ---
+  const [criteria, setCriteria] = useState(initialCriteria); // State untuk kriteria yang bisa diedit
   const [showResult, setShowResult] = useState(false);
   const [calculationSteps, setCalculationSteps] = useState(null);
   const [finalRanking, setFinalRanking] = useState([]);
   const [sortBy, setSortBy] = useState('SAW');
 
+  // --- HANDLER: UBAH BOBOT ---
+  const handleWeightChange = (id, newVal) => {
+    // Pastikan input angka positif, jika kosong anggap 0
+    const val = newVal === "" ? 0 : parseFloat(newVal);
+    
+    setCriteria(prevCriteria => 
+      prevCriteria.map(c => 
+        c.id === id ? { ...c, weight: val } : c
+      )
+    );
+    // Jika bobot berubah, reset hasil agar user harus hitung ulang
+    if (showResult) setShowResult(false);
+  };
+
+  // Hitung Total Bobot untuk Validasi UI
+  const totalWeight = criteria.reduce((sum, item) => sum + item.weight, 0);
+  const isWeightValid = Math.abs(totalWeight - 1.0) < 0.001; // Toleransi floating point
+
+  // --- LOGIC: PERHITUNGAN ---
   const handleCalculate = () => {
-    // 1. Min/Max Global
+    // 1. Persiapan Mapping Data dari State Terbaru
+    const currentWeights = {};
+    const costCriteria = [];
+    
+    criteria.forEach(c => {
+      currentWeights[c.key] = c.weight;
+      if (c.type === "Cost") costCriteria.push(c.key);
+    });
+
+    // 2. Min/Max Global
     const max = {}, min = {};
-    Object.keys(weights).forEach(k => {
+    Object.keys(currentWeights).forEach(k => {
       max[k] = Math.max(...dataProvinsi.map(d => d[k]));
       min[k] = Math.min(...dataProvinsi.map(d => d[k]));
     });
 
-    // 2. LOGIKA SAW
+    // 3. LOGIKA SAW
     const sawResult = dataProvinsi.map(d => {
       let score = 0;
       const detail = {};
       
-      Object.keys(weights).forEach(k => {
+      Object.keys(currentWeights).forEach(k => {
         const isCost = costCriteria.includes(k);
         const val = d[k];
         let norm = 0;
@@ -142,7 +165,7 @@ export default function App() {
           formulaTrace = `${val} / ${max[k]}`;
         }
 
-        const weighted = norm * weights[k];
+        const weighted = norm * currentWeights[k];
         score += weighted;
 
         detail[k] = { 
@@ -150,34 +173,37 @@ export default function App() {
           raw: val,
           formulaNorm: formulaTrace,
           resNorm: norm.toFixed(4),
-          formulaWeight: `${norm.toFixed(4)} × ${weights[k]}`,
+          formulaWeight: `${norm.toFixed(4)} × ${currentWeights[k]}`,
           resWeight: weighted.toFixed(4)
         };
       });
       return { prov: d.prov, score: Number(score.toFixed(4)), detail };
     });
 
-    // 3. LOGIKA SMART
+    // 4. LOGIKA SMART
     const smartResult = dataProvinsi.map(d => {
       let score = 0;
       const detail = {};
       
-      Object.keys(weights).forEach(k => {
+      Object.keys(currentWeights).forEach(k => {
         const isCost = costCriteria.includes(k);
         const val = d[k];
         const range = max[k] - min[k]; 
         let util = 0;
         let formulaTrace = "";
 
+        // Cegah pembagian dengan nol jika max == min
+        const safeRange = range === 0 ? 1 : range;
+
         if (isCost) {
-          util = (max[k] - val) / range;
-          formulaTrace = `(${max[k]} - ${val}) / ${range.toFixed(2)}`;
+          util = (max[k] - val) / safeRange;
+          formulaTrace = `(${max[k]} - ${val}) / ${safeRange.toFixed(2)}`;
         } else {
-          util = (val - min[k]) / range;
-          formulaTrace = `(${val} - ${min[k]}) / ${range.toFixed(2)}`;
+          util = (val - min[k]) / safeRange;
+          formulaTrace = `(${val} - ${min[k]}) / ${safeRange.toFixed(2)}`;
         }
 
-        const weighted = util * weights[k];
+        const weighted = util * currentWeights[k];
         score += weighted;
 
         detail[k] = { 
@@ -185,14 +211,14 @@ export default function App() {
           raw: val,
           formulaUtil: formulaTrace,
           resUtil: util.toFixed(4),
-          formulaWeight: `${util.toFixed(4)} × ${weights[k]}`,
+          formulaWeight: `${util.toFixed(4)} × ${currentWeights[k]}`,
           resWeight: weighted.toFixed(4)
         };
       });
       return { prov: d.prov, score: Number(score.toFixed(4)), detail };
     });
 
-    // 4. Combine & Initial Sort
+    // 5. Combine & Sort
     const combined = sawResult.map(s => {
       const sItem = smartResult.find(x => x.prov === s.prov);
       return {
@@ -228,39 +254,56 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-800 tracking-tight">Sanitasi Nasional</h1>
-              <p className="text-xs text-slate-500 font-medium">Comparative Analysis: SAW vs SMART</p>
+              <p className="text-xs text-slate-500 font-medium">Perbandingan SAW dan SMART</p>
             </div>
           </div>
           
-          {!showResult ? (
+          <div className="flex items-center gap-4">
+            {/* Indikator Validasi Bobot di Header */}
+            <div className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${
+                isWeightValid 
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                : "bg-amber-50 text-amber-700 border-amber-200"
+              }`}>
+               <span>Σ Bobot: {totalWeight.toFixed(2)}</span>
+               {!isWeightValid && <span title="Total bobot idealnya 1.0">⚠️</span>}
+            </div>
+
             <button
               onClick={handleCalculate}
-              className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl shadow-lg shadow-slate-200 transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
+              disabled={showResult} 
+              className={`px-6 py-2.5 font-medium rounded-xl shadow-lg transition-all transform flex items-center gap-2
+                ${showResult 
+                  ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
+                  : "bg-slate-900 hover:bg-slate-800 text-white hover:-translate-y-0.5 active:scale-95 shadow-slate-200"
+                }`}
             >
               <span>🚀 Mulai Perhitungan</span>
             </button>
-          ) : (
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 text-sm text-slate-600 hover:text-indigo-600 font-medium transition-colors"
-            >
-              ↺ Reset Data
-            </button>
-          )}
+            
+            {showResult && (
+               <button
+               onClick={() => setShowResult(false)}
+               className="px-4 py-2 text-sm text-slate-600 hover:text-indigo-600 font-medium transition-colors border border-slate-200 rounded-lg hover:bg-slate-50"
+             >
+               ↺ Reset & Edit
+             </button>
+            )}
+          </div>
         </div>
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
-        {/* --- SECTION 1: KRITERIA & BOBOT --- */}
+        {/* --- SECTION 1: KRITERIA & INPUT BOBOT --- */}
         <section>
           <div className="flex items-center justify-between mb-4 px-1">
             <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
               <span className="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
-              Kriteria & Bobot
+              Input Bobot Kriteria
             </h2>
-            <div className="text-xs text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 shadow-sm font-medium">
-              Total Bobot: 1.0 (100%)
+            <div className="text-xs text-slate-500 italic">
+              *Silakan ubah nilai bobot di bawah ini sebelum menghitung
             </div>
           </div>
 
@@ -272,29 +315,54 @@ export default function App() {
                     <th className="px-6 py-3 font-semibold">Kode</th>
                     <th className="px-6 py-3 font-semibold">Kriteria</th>
                     <th className="px-6 py-3 font-semibold">Atribut</th>
-                    <th className="px-6 py-3 font-semibold">Bobot</th>
-                    <th className="px-6 py-3 font-semibold">Alasan / Justifikasi</th>
+                    <th className="px-6 py-3 font-semibold w-32">Input Bobot</th>
+                    <th className="px-6 py-3 font-semibold">Keterangan</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {criteriaInfo.map((c, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/50">
+                  {criteria.map((c, idx) => (
+                    <tr key={c.id} className="hover:bg-slate-50/50">
                       <td className="px-6 py-3 font-mono text-slate-500 font-bold">{c.code}</td>
                       <td className="px-6 py-3 font-medium text-slate-700">{c.label}</td>
                       <td className="px-6 py-3">
                         <Badge type={c.type} text={c.type} />
                       </td>
-                      <td className="px-6 py-3 font-mono font-bold text-slate-600">{c.weight}</td>
+                      <td className="px-6 py-3">
+                        {/* INPUT FIELD UNTUK BOBOT */}
+                        <div className="relative">
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            min="0" 
+                            max="1"
+                            value={c.weight}
+                            onChange={(e) => handleWeightChange(c.id, e.target.value)}
+                            className={`w-full px-3 py-1.5 border rounded-lg font-mono font-bold text-center focus:outline-none focus:ring-2 transition-all
+                              ${c.weight === 0 ? "text-slate-300 border-slate-200" : "text-emerald-700 border-emerald-200 focus:border-emerald-500 focus:ring-emerald-200"}`}
+                          />
+                        </div>
+                      </td>
                       <td className="px-6 py-3 text-slate-500 italic text-xs">{c.reason}</td>
                     </tr>
                   ))}
+                  {/* FOOTER TOTAL */}
+                  <tr className="bg-slate-50 font-bold">
+                    <td colSpan={3} className="px-6 py-3 text-right text-slate-600 uppercase text-xs tracking-wider">Total Bobot:</td>
+                    <td className="px-6 py-3 text-center">
+                      <span className={`px-2 py-1 rounded text-xs font-mono 
+                        ${isWeightValid ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600 animate-pulse"}`}>
+                        {totalWeight.toFixed(2)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-xs text-slate-400">Target: 1.00</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
           </Card>
         </section>
 
-        {/* --- SECTION 2: DATASET --- */}
+        {/* --- SECTION 2: DATASET (READ ONLY) --- */}
         <section>
           <div className="flex items-center justify-between mb-4 px-1">
             <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
@@ -312,7 +380,7 @@ export default function App() {
                 <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
                   <tr>
                     <th className="px-6 py-4 font-semibold">Provinsi</th>
-                    {criteriaInfo.map(h => (
+                    {criteria.map(h => (
                       <th key={h.key} className="px-6 py-4 font-semibold text-center">
                         <div className="flex flex-col items-center gap-1">
                           {h.key}
@@ -326,7 +394,7 @@ export default function App() {
                   {dataProvinsi.map((p, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4 font-medium text-slate-700">{p.prov}</td>
-                      {criteriaInfo.map((h, i) => (
+                      {criteria.map((h, i) => (
                         <td key={i} className="px-6 py-4 text-center text-slate-600 font-mono">
                           {p[h.key]}
                         </td>
@@ -339,17 +407,18 @@ export default function App() {
           </Card>
         </section>
 
+        {/* --- HASIL PERHITUNGAN (Hanya Muncul Jika showResult == true) --- */}
         {showResult && calculationSteps && (
           <>
             {/* --- SECTION 3: COMPARISON CHART & TABLE --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up">
               
               {/* RANKING TABLE */}
               <Card className="lg:col-span-1 h-fit flex flex-col">
                 <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-3">
                   <div>
                     <h3 className="font-bold text-slate-700">🏆 Hasil Perangkingan</h3>
-                    <p className="text-xs text-slate-500 mt-1">Pilih metode sorting di bawah ini:</p>
+                    <p className="text-xs text-slate-500 mt-1">Menggunakan bobot yang Anda input.</p>
                   </div>
                   
                   {/* SORTING TOGGLE */}
@@ -362,7 +431,7 @@ export default function App() {
                         : 'text-slate-500 hover:text-slate-700'
                       }`}
                     >
-                      Berdasarkan SAW
+                      SAW Rank
                     </button>
                     <button 
                       onClick={() => handleSortChange('SMART')}
@@ -372,19 +441,19 @@ export default function App() {
                         : 'text-slate-500 hover:text-slate-700'
                       }`}
                     >
-                      Berdasarkan SMART
+                      SMART Rank
                     </button>
                   </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar">
                   <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-slate-500 text-xs uppercase">
+                    <thead className="bg-slate-50 text-slate-500 text-xs uppercase sticky top-0 z-10">
                       <tr>
-                        <th className="px-4 py-3 text-left w-12">#</th>
-                        <th className="px-4 py-3 text-left">Provinsi</th>
-                        <th className={`px-4 py-3 text-right ${sortBy === 'SAW' ? 'bg-indigo-50 text-indigo-700' : ''}`}>SAW</th>
-                        <th className={`px-4 py-3 text-right ${sortBy === 'SMART' ? 'bg-fuchsia-50 text-fuchsia-700' : ''}`}>SMART</th>
+                        <th className="px-4 py-3 text-left w-12 bg-slate-50">#</th>
+                        <th className="px-4 py-3 text-left bg-slate-50">Provinsi</th>
+                        <th className={`px-4 py-3 text-right ${sortBy === 'SAW' ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-50'}`}>SAW</th>
+                        <th className={`px-4 py-3 text-right ${sortBy === 'SMART' ? 'bg-fuchsia-50 text-fuchsia-700' : 'bg-slate-50'}`}>SMART</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -412,8 +481,8 @@ export default function App() {
               <Card className="lg:col-span-2 flex flex-col">
                 <div className="p-5 border-b border-slate-100 flex justify-between items-center">
                   <div>
-                    <h3 className="font-bold text-slate-700">Visualisasi Perbandingan</h3>
-                    <p className="text-xs text-slate-500 mt-1">Data diurutkan berdasarkan metode: <span className="font-bold uppercase text-slate-700">{sortBy}</span></p>
+                    <h3 className="font-bold text-slate-700">Visualisasi Grafik</h3>
+                    <p className="text-xs text-slate-500 mt-1">Data diurutkan berdasarkan: <span className="font-bold uppercase text-slate-700">{sortBy}</span></p>
                   </div>
                   <div className="flex gap-2 text-xs font-medium">
                     <div className="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-1 rounded">
@@ -424,7 +493,7 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-                <div className="p-6 flex-1 min-h-[350px]">
+                <div className="p-6 flex-1 min-h-[400px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={finalRanking} barGap={0}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -437,7 +506,7 @@ export default function App() {
                         interval={0}
                         angle={-45}
                         textAnchor="end"
-                        height={60}
+                        height={80}
                       />
                       <YAxis 
                         axisLine={false} 
@@ -449,13 +518,15 @@ export default function App() {
                         dataKey="SAW" 
                         fill="#6366f1" 
                         radius={[4, 4, 0, 0]} 
-                        fillOpacity={sortBy === 'SAW' ? 1 : 0.4}
+                        fillOpacity={sortBy === 'SAW' ? 1 : 0.3}
+                        animationDuration={1000}
                       />
                       <Bar 
                         dataKey="SMART" 
                         fill="#d946ef" 
                         radius={[4, 4, 0, 0]} 
-                        fillOpacity={sortBy === 'SMART' ? 1 : 0.4}
+                        fillOpacity={sortBy === 'SMART' ? 1 : 0.3}
+                        animationDuration={1000}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -467,66 +538,41 @@ export default function App() {
             <div className="mt-10">
               <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2 mb-4">
                 <span className="w-1.5 h-6 bg-slate-400 rounded-full"></span>
-                Rincian Langkah Perhitungan (Step-by-Step)
+                Rincian Langkah Perhitungan (Traceability)
               </h2>
-              <p className="text-sm text-slate-500 mb-6 bg-slate-100 p-3 rounded-lg border border-slate-200">
-                ℹ️ Catatan: Urutan tampilan di bawah ini tetap mengikuti urutan abjad/awal data agar mudah dicek.
-              </p>
-
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                 
                 {/* 1. SAW DETAILS */}
                 <div className="space-y-4">
                   <div className="bg-indigo-600 text-white p-5 rounded-2xl shadow-lg shadow-indigo-200">
-                    <h3 className="font-bold text-lg">Perhitungan Metode SAW</h3>
-                    <div className="mt-3 bg-indigo-500/40 p-3 rounded-lg text-xs font-mono border border-indigo-400/30 space-y-1">
-                      <p>Benefit: R = Nilai / Max</p>
-                      <p>Cost: R = Min / Nilai</p>
-                      <p>Score = Σ (Nilai Hasil Bobot)</p>
-                    </div>
+                    <h3 className="font-bold text-lg">Metode SAW</h3>
+                    <p className="text-xs text-indigo-200 mt-1">Normalisasi Matriks × Bobot</p>
                   </div>
-                  
                   <div className="space-y-4">
                     {calculationSteps.saw.map((s) => (
                       <Card key={s.prov} className="p-0 border-indigo-100 flex flex-col">
                         <div className="px-4 py-3 bg-indigo-50/50 border-b border-indigo-100 flex justify-between items-center">
                           <span className="font-bold text-indigo-900">{s.prov}</span>
                           <span className="bg-indigo-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">
-                            Score SAW: {s.score}
+                            {s.score}
                           </span>
                         </div>
-                        
-                        <div className="p-4 grid gap-4 flex-grow">
+                        <div className="p-4 grid gap-3">
                           {Object.entries(s.detail).map(([k, v]) => (
-                            <div key={k} className="text-xs grid grid-cols-12 gap-2 items-center border-b border-dashed border-slate-200 pb-2 last:border-0 last:pb-0">
-                              <div className="col-span-3 font-semibold text-slate-600 capitalize">{k}</div>
-                              <div className="col-span-9 flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] uppercase tracking-wider text-slate-400 w-8">Norm</span>
-                                  <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-mono">
-                                    {v.formulaNorm}
-                                  </code>
-                                  <span className="text-slate-400">=</span>
-                                  <span className="font-bold text-indigo-600 font-mono">{v.resNorm}</span>
+                            <div key={k} className="text-xs grid grid-cols-12 gap-2 items-center border-b border-dashed border-slate-100 pb-2">
+                              <div className="col-span-2 font-semibold text-slate-600 capitalize">{k}</div>
+                              <div className="col-span-10 flex flex-col gap-1">
+                                <div className="flex gap-2">
+                                  <span className="text-slate-400 w-6">Norm:</span>
+                                  <code className="bg-slate-100 px-1 rounded text-slate-600">{v.formulaNorm} = <strong>{v.resNorm}</strong></code>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] uppercase tracking-wider text-slate-400 w-8">Bobot</span>
-                                  <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-mono">
-                                    {v.formulaWeight}
-                                  </code>
-                                  <span className="text-slate-400">=</span>
-                                  <span className="font-bold text-slate-800 font-mono">{v.resWeight}</span>
+                                <div className="flex gap-2">
+                                  <span className="text-slate-400 w-6">W:</span>
+                                  <code className="bg-slate-100 px-1 rounded text-slate-600">{v.formulaWeight} = <strong className="text-indigo-600">{v.resWeight}</strong></code>
                                 </div>
                               </div>
                             </div>
                           ))}
-                        </div>
-
-                        {/* --- ADDED FEATURE: TOTAL SUMMATION --- */}
-                        <div className="px-4 py-3 bg-indigo-50/30 border-t border-indigo-100 text-xs text-slate-600 font-mono break-words leading-relaxed">
-                            <span className="font-bold text-indigo-700 uppercase mr-1">Σ Total:</span>
-                            {Object.values(s.detail).map(v => v.resWeight).join(" + ")}
-                            <span className="font-bold text-indigo-700 ml-1"> = {s.score}</span>
                         </div>
                       </Card>
                     ))}
@@ -536,54 +582,34 @@ export default function App() {
                 {/* 2. SMART DETAILS */}
                 <div className="space-y-4">
                   <div className="bg-fuchsia-600 text-white p-5 rounded-2xl shadow-lg shadow-fuchsia-200">
-                    <h3 className="font-bold text-lg">Perhitungan Metode SMART</h3>
-                    <div className="mt-3 bg-fuchsia-500/40 p-3 rounded-lg text-xs font-mono border border-fuchsia-400/30 space-y-1">
-                      <p>Utility: U = (Nilai - Min) / (Max - Min)</p>
-                      <p>Score = Σ (Nilai Hasil Bobot)</p>
-                    </div>
+                    <h3 className="font-bold text-lg">Metode SMART</h3>
+                    <p className="text-xs text-fuchsia-200 mt-1">Utility Function × Bobot</p>
                   </div>
-
                   <div className="space-y-4">
                     {calculationSteps.smart.map((s) => (
                       <Card key={s.prov} className="p-0 border-fuchsia-100 flex flex-col">
                         <div className="px-4 py-3 bg-fuchsia-50/50 border-b border-fuchsia-100 flex justify-between items-center">
                           <span className="font-bold text-fuchsia-900">{s.prov}</span>
                           <span className="bg-fuchsia-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">
-                            Score SMART: {s.score}
+                            {s.score}
                           </span>
                         </div>
-
-                        <div className="p-4 grid gap-4 flex-grow">
+                        <div className="p-4 grid gap-3">
                           {Object.entries(s.detail).map(([k, v]) => (
-                            <div key={k} className="text-xs grid grid-cols-12 gap-2 items-center border-b border-dashed border-slate-200 pb-2 last:border-0 last:pb-0">
-                              <div className="col-span-3 font-semibold text-slate-600 capitalize">{k}</div>
-                              <div className="col-span-9 flex flex-col gap-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-[10px] uppercase tracking-wider text-slate-400 w-8">Util</span>
-                                  <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-mono text-[10px]">
-                                    {v.formulaUtil}
-                                  </code>
-                                  <span className="text-slate-400">=</span>
-                                  <span className="font-bold text-fuchsia-600 font-mono">{v.resUtil}</span>
+                            <div key={k} className="text-xs grid grid-cols-12 gap-2 items-center border-b border-dashed border-slate-100 pb-2">
+                              <div className="col-span-2 font-semibold text-slate-600 capitalize">{k}</div>
+                              <div className="col-span-10 flex flex-col gap-1">
+                                <div className="flex gap-2">
+                                  <span className="text-slate-400 w-6">Util:</span>
+                                  <code className="bg-slate-100 px-1 rounded text-slate-600 text-[10px]">{v.formulaUtil} = <strong>{v.resUtil}</strong></code>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] uppercase tracking-wider text-slate-400 w-8">Bobot</span>
-                                  <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-mono">
-                                    {v.formulaWeight}
-                                  </code>
-                                  <span className="text-slate-400">=</span>
-                                  <span className="font-bold text-slate-800 font-mono">{v.resWeight}</span>
+                                <div className="flex gap-2">
+                                  <span className="text-slate-400 w-6">W:</span>
+                                  <code className="bg-slate-100 px-1 rounded text-slate-600">{v.formulaWeight} = <strong className="text-fuchsia-600">{v.resWeight}</strong></code>
                                 </div>
                               </div>
                             </div>
                           ))}
-                        </div>
-
-                        {/* --- ADDED FEATURE: TOTAL SUMMATION --- */}
-                        <div className="px-4 py-3 bg-fuchsia-50/30 border-t border-fuchsia-100 text-xs text-slate-600 font-mono break-words leading-relaxed">
-                            <span className="font-bold text-fuchsia-700 uppercase mr-1">Σ Total:</span>
-                            {Object.values(s.detail).map(v => v.resWeight).join(" + ")}
-                            <span className="font-bold text-fuchsia-700 ml-1"> = {s.score}</span>
                         </div>
                       </Card>
                     ))}
