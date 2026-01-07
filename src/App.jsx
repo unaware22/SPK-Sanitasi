@@ -104,7 +104,7 @@ const Badge = ({ type, text }) => {
  ****************************/
 export default function App() {
   // --- STATE MANAGEMENT ---
-  const [criteria, setCriteria] = useState(initialCriteria); // State untuk kriteria yang bisa diedit
+  const [criteria, setCriteria] = useState(initialCriteria);
   const [showResult, setShowResult] = useState(false);
   const [calculationSteps, setCalculationSteps] = useState(null);
   const [finalRanking, setFinalRanking] = useState([]);
@@ -112,25 +112,20 @@ export default function App() {
 
   // --- HANDLER: UBAH BOBOT ---
   const handleWeightChange = (id, newVal) => {
-    // Pastikan input angka positif, jika kosong anggap 0
     const val = newVal === "" ? 0 : parseFloat(newVal);
-    
     setCriteria(prevCriteria => 
       prevCriteria.map(c => 
         c.id === id ? { ...c, weight: val } : c
       )
     );
-    // Jika bobot berubah, reset hasil agar user harus hitung ulang
     if (showResult) setShowResult(false);
   };
 
-  // Hitung Total Bobot untuk Validasi UI
   const totalWeight = criteria.reduce((sum, item) => sum + item.weight, 0);
-  const isWeightValid = Math.abs(totalWeight - 1.0) < 0.001; // Toleransi floating point
+  const isWeightValid = Math.abs(totalWeight - 1.0) < 0.001;
 
   // --- LOGIC: PERHITUNGAN ---
   const handleCalculate = () => {
-    // 1. Persiapan Mapping Data dari State Terbaru
     const currentWeights = {};
     const costCriteria = [];
     
@@ -139,14 +134,14 @@ export default function App() {
       if (c.type === "Cost") costCriteria.push(c.key);
     });
 
-    // 2. Min/Max Global
+    // Min/Max Global
     const max = {}, min = {};
     Object.keys(currentWeights).forEach(k => {
       max[k] = Math.max(...dataProvinsi.map(d => d[k]));
       min[k] = Math.min(...dataProvinsi.map(d => d[k]));
     });
 
-    // 3. LOGIKA SAW
+    // LOGIKA SAW
     const sawResult = dataProvinsi.map(d => {
       let score = 0;
       const detail = {};
@@ -180,7 +175,7 @@ export default function App() {
       return { prov: d.prov, score: Number(score.toFixed(4)), detail };
     });
 
-    // 4. LOGIKA SMART
+    // LOGIKA SMART
     const smartResult = dataProvinsi.map(d => {
       let score = 0;
       const detail = {};
@@ -192,7 +187,6 @@ export default function App() {
         let util = 0;
         let formulaTrace = "";
 
-        // Cegah pembagian dengan nol jika max == min
         const safeRange = range === 0 ? 1 : range;
 
         if (isCost) {
@@ -218,7 +212,6 @@ export default function App() {
       return { prov: d.prov, score: Number(score.toFixed(4)), detail };
     });
 
-    // 5. Combine & Sort
     const combined = sawResult.map(s => {
       const sItem = smartResult.find(x => x.prov === s.prov);
       return {
@@ -259,7 +252,6 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-4">
-            {/* Indikator Validasi Bobot di Header */}
             <div className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${
                 isWeightValid 
                 ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
@@ -271,9 +263,10 @@ export default function App() {
 
             <button
               onClick={handleCalculate}
-              disabled={showResult} 
+              // PERUBAHAN DISINI: Disabled jika Result muncul ATAU bobot tidak valid
+              disabled={showResult || !isWeightValid} 
               className={`px-6 py-2.5 font-medium rounded-xl shadow-lg transition-all transform flex items-center gap-2
-                ${showResult 
+                ${showResult || !isWeightValid
                   ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
                   : "bg-slate-900 hover:bg-slate-800 text-white hover:-translate-y-0.5 active:scale-95 shadow-slate-200"
                 }`}
@@ -328,7 +321,6 @@ export default function App() {
                         <Badge type={c.type} text={c.type} />
                       </td>
                       <td className="px-6 py-3">
-                        {/* INPUT FIELD UNTUK BOBOT */}
                         <div className="relative">
                           <input 
                             type="number" 
@@ -345,7 +337,6 @@ export default function App() {
                       <td className="px-6 py-3 text-slate-500 italic text-xs">{c.reason}</td>
                     </tr>
                   ))}
-                  {/* FOOTER TOTAL */}
                   <tr className="bg-slate-50 font-bold">
                     <td colSpan={3} className="px-6 py-3 text-right text-slate-600 uppercase text-xs tracking-wider">Total Bobot:</td>
                     <td className="px-6 py-3 text-center">
@@ -407,7 +398,7 @@ export default function App() {
           </Card>
         </section>
 
-        {/* --- HASIL PERHITUNGAN (Hanya Muncul Jika showResult == true) --- */}
+        {/* --- HASIL PERHITUNGAN --- */}
         {showResult && calculationSteps && (
           <>
             {/* --- SECTION 3: COMPARISON CHART & TABLE --- */}
@@ -421,7 +412,6 @@ export default function App() {
                     <p className="text-xs text-slate-500 mt-1">Menggunakan bobot yang Anda input.</p>
                   </div>
                   
-                  {/* SORTING TOGGLE */}
                   <div className="flex bg-slate-200 p-1 rounded-lg">
                     <button 
                       onClick={() => handleSortChange('SAW')}
@@ -546,17 +536,19 @@ export default function App() {
                 <div className="space-y-4">
                   <div className="bg-indigo-600 text-white p-5 rounded-2xl shadow-lg shadow-indigo-200">
                     <h3 className="font-bold text-lg">Metode SAW</h3>
-                    <p className="text-xs text-indigo-200 mt-1">Normalisasi Matriks × Bobot</p>
+                    <p className="text-xs text-indigo-200 mt-1">Benefit: R = Nilai / Max <br /> Cost: R = Min / Nilai <br /> Skor Akhir = Σ (Bobot x R)</p>
                   </div>
                   <div className="space-y-4">
                     {calculationSteps.saw.map((s) => (
                       <Card key={s.prov} className="p-0 border-indigo-100 flex flex-col">
+                        {/* --- MODIFIKASI: Skor ada di pojok kanan atas (Biru) --- */}
                         <div className="px-4 py-3 bg-indigo-50/50 border-b border-indigo-100 flex justify-between items-center">
                           <span className="font-bold text-indigo-900">{s.prov}</span>
-                          <span className="bg-indigo-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">
+                          <span className="bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm font-mono font-bold shadow-sm">
                             {s.score}
                           </span>
                         </div>
+                        {/* ----------------------------------------------------- */}
                         <div className="p-4 grid gap-3">
                           {Object.entries(s.detail).map(([k, v]) => (
                             <div key={k} className="text-xs grid grid-cols-12 gap-2 items-center border-b border-dashed border-slate-100 pb-2">
@@ -574,6 +566,12 @@ export default function App() {
                             </div>
                           ))}
                         </div>
+                        <div className="px-4 py-3 bg-slate-50 border-t border-slate-200">
+                          <div className="text-[10px] text-slate-400 mb-1">Pembuktian (Σ Bobot):</div>
+                          <div className="font-mono text-xs text-slate-600 break-words leading-relaxed bg-white p-2 border border-slate-100 rounded">
+                              {Object.values(s.detail).map(d => d.resWeight).join(" + ")} = <strong>{s.score}</strong>
+                          </div>
+                        </div>
                       </Card>
                     ))}
                   </div>
@@ -583,17 +581,19 @@ export default function App() {
                 <div className="space-y-4">
                   <div className="bg-fuchsia-600 text-white p-5 rounded-2xl shadow-lg shadow-fuchsia-200">
                     <h3 className="font-bold text-lg">Metode SMART</h3>
-                    <p className="text-xs text-fuchsia-200 mt-1">Utility Function × Bobot</p>
+                    <p className="text-xs text-fuchsia-200 mt-1">Benefit: U = (Nilai - Min) / (Max - Min) <br /> Cost: U = (Max - Nilai) / (Max - Min) <br /> Skor Akhir = Σ (Bobot x U)</p>
                   </div>
                   <div className="space-y-4">
                     {calculationSteps.smart.map((s) => (
                       <Card key={s.prov} className="p-0 border-fuchsia-100 flex flex-col">
+                        {/* --- MODIFIKASI: Skor ada di pojok kanan atas (Pink) --- */}
                         <div className="px-4 py-3 bg-fuchsia-50/50 border-b border-fuchsia-100 flex justify-between items-center">
                           <span className="font-bold text-fuchsia-900">{s.prov}</span>
-                          <span className="bg-fuchsia-600 text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">
+                          <span className="bg-fuchsia-600 text-white px-3 py-1 rounded-lg text-sm font-mono font-bold shadow-sm">
                             {s.score}
                           </span>
                         </div>
+                        {/* ----------------------------------------------------- */}
                         <div className="p-4 grid gap-3">
                           {Object.entries(s.detail).map(([k, v]) => (
                             <div key={k} className="text-xs grid grid-cols-12 gap-2 items-center border-b border-dashed border-slate-100 pb-2">
@@ -611,6 +611,12 @@ export default function App() {
                             </div>
                           ))}
                         </div>
+                        <div className="px-4 py-3 bg-slate-50 border-t border-slate-200">
+                          <div className="text-[10px] text-slate-400 mb-1">Pembuktian (Σ Bobot):</div>
+                          <div className="font-mono text-xs text-slate-600 break-words leading-relaxed bg-white p-2 border border-slate-100 rounded">
+                              {Object.values(s.detail).map(d => d.resWeight).join(" + ")} = <strong>{s.score}</strong>
+                          </div>
+                        </div>
                       </Card>
                     ))}
                   </div>
@@ -620,6 +626,7 @@ export default function App() {
             </div>
           </>
         )}
+
       </main>
     </div>
   );
