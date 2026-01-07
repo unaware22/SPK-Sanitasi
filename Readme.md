@@ -1,7 +1,6 @@
-# Sanitasi Lingkungan (SPK - B)
+# Pemilihan lokasi bantuan sanitasi bersih (SPK - B)
 **Kelompok 9**
 
-Repository ini berisi tugas, laporan, dan dokumentasi proyek untuk mata kuliah Sanitasi.
 
 ## 👥 Anggota Tim
 
