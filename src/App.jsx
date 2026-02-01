@@ -14,12 +14,12 @@ import {
  ****************************/
 
 const initialCriteria = [
-  { id: 1, code: "C1", key: "sanitasi", label: "Sanitasi Layak", weight: 0.20, type: "Benefit", reason: "Infrastruktur dasar utama pencegahan penyakit." },
+  { id: 1, code: "C1", key: "sanitasi", label: "Sanitasi Layak", weight: 0.20, type: "Cost", reason: "Infrastruktur dasar utama pencegahan penyakit." },
   { id: 2, code: "C2", key: "air", label: "Air Minum Layak", weight: 0.20, type: "Benefit", reason: "Kebutuhan vital untuk kehidupan higienis." },
-  { id: 3, code: "C3", key: "diare", label: "Prevalensi Diare", weight: 0.20, type: "Cost", reason: "Indikator dampak kesehatan jangka pendek." },
-  { id: 4, code: "C4", key: "stunting", label: "Prevalensi Stunting", weight: 0.20, type: "Cost", reason: "Indikator dampak kesehatan jangka panjang." },
-  { id: 5, code: "C5", key: "iklh", label: "Indeks Lingkungan", weight: 0.10, type: "Benefit", reason: "Indikator makro kualitas ekosistem daerah." },
-  { id: 6, code: "C6", key: "kepadatan", label: "Kepadatan Penduduk", weight: 0.10, type: "Cost", reason: "Faktor risiko yang mempercepat penularan." },
+  { id: 3, code: "C3", key: "diare", label: "Prevalensi Diare", weight: 0.20, type: "Benefit", reason: "Indikator dampak kesehatan jangka pendek." },
+  { id: 4, code: "C4", key: "stunting", label: "Prevalensi Stunting", weight: 0.20, type: "Benefit", reason: "Indikator dampak kesehatan jangka panjang." },
+  { id: 5, code: "C5", key: "iklh", label: "Indeks Lingkungan", weight: 0.10, type: "Cost", reason: "Indikator makro kualitas ekosistem daerah." },
+  { id: 6, code: "C6", key: "kepadatan", label: "Kepadatan Penduduk", weight: 0.10, type: "Benefit", reason: "Faktor risiko yang mempercepat penularan." },
 ];
 
 const dataProvinsi = [
