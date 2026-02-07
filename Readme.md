@@ -10,11 +10,14 @@
 | **4523210044** | Fahran Maulana Febryan | 
 | **4523210055** | Jovan Alfito Praditia | 
 
+---
+
 ## 📝 Tujuan Proyek
 Menentukan Prioritas Bantuan Sanitasi Pada Setiap Provinsi
 
+---
 
-### Kriteria Penilaian
+## Kriteria Penilaian
 
 Tabel berikut menunjukkan kriteria yang digunakan dalam perhitungan Sistem Pendukung Keputusan (SPK) ini:
 
