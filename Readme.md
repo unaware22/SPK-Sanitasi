@@ -263,13 +263,84 @@ Grid 2 kolom (XL): **Kiri = Detail SAW** | **Kanan = Detail SMART**
 
 ---
 
-### **Screenshot Referensi**
+### **Screenshot dan Keterangan Gambar**
 
-| State | Deskripsi |
-|:---|:---|
-| **State 1** | Header + Input Bobot + Dataset Awal (seperti screenshot yang diberikan) |
-| **State 2** | + Tabel Ranking + Bar Chart + Traceability SAW/SMART detail |
-| **State 3** | Kembali ke State 1 dengan data ter-reset |
+Simpan semua gambar di folder berikut:
+
+```text
+SPK-Sanitasi/
+└── docs/
+    └── screenshots/
+        ├── 01-input-bobot.png
+        ├── 02-dataset-awal.png
+        ├── 03-hasil-perangkingan-dan-visualisasi-grafik.png
+        ├── 04-rincian-saw-dan-smart.png
+```
+
+#### 1. Input Bobot Kriteria
+
+Letakkan screenshot bagian input bobot sebagai:
+
+```text
+docs/screenshots/01-input-bobot.png
+```
+
+```md
+![Input Bobot Kriteria](./docs/screenshots/01-input-bobot.png)
+```
+
+![Input Bobot Kriteria](./docs/screenshots/01-input-bobot.png)
+
+Gambar ini menampilkan form utama untuk mengatur bobot enam kriteria penilaian. Setiap kriteria memiliki kode, nama kriteria, atribut Cost/Benefit, input bobot, dan keterangan. Total bobot harus bernilai `1.00` agar perhitungan SAW dan SMART dapat dijalankan.
+
+#### 2. Dataset Awal
+
+Letakkan screenshot bagian dataset awal sebagai:
+
+```text
+docs/screenshots/02-dataset-awal.png
+```
+
+```md
+![Dataset Awal](./docs/screenshots/02-dataset-awal.png)
+```
+
+![Dataset Awal](./docs/screenshots/02-dataset-awal.png)
+
+Gambar ini menampilkan dataset 34 provinsi Indonesia yang digunakan sebagai data awal perhitungan. Kolom dataset terdiri dari Provinsi, Sanitasi, Air Minum, Diare, Stunting, IKLH, dan Kepadatan Penduduk. Data ini menjadi dasar untuk proses normalisasi SAW dan utilisasi SMART.
+
+#### 3. Hasil Perangkingan dan Visualisasi Grafik
+
+Letakkan screenshot tabel hasil ranking sebagai:
+
+```text
+docs/screenshots/03-hasil-perangkingan-dan-visualisasi-grafik.png
+```
+
+```md
+![Hasil Perangkingan](./docs/screenshots/03-hasil-perangkingan.png)
+```
+
+![Hasil Perangkingan](./docs/screenshots/03-hasil-perangkingan.png)
+
+Gambar ini menampilkan hasil akhir perhitungan dalam bentuk tabel ranking. Setiap provinsi memiliki skor SAW dan skor SMART. User dapat membandingkan perbedaan urutan prioritas berdasarkan dua metode tersebut dan menampilkan perbandingan skor SAW dan SMART dalam bentuk bar chart. Grafik membantu melihat perbedaan skor antar-provinsi secara visual sehingga hasil ranking lebih mudah dianalisis.
+
+#### 4. Rincian Langkah Perhitungan SAW dan SMART
+
+Letakkan screenshot rincian SAW sebagai:
+
+```text
+docs/screenshots/05-rincian-saw-dan-smart.png
+```
+
+```md
+![Rincian Perhitungan SAW](./docs/screenshots/05-rincian-saw.png)
+```
+
+![Rincian Perhitungan SAW](./docs/screenshots/05-rincian-saw.png)
+
+Gambar ini menampilkan proses perhitungan metode SAW secara detail. Untuk kriteria Benefit digunakan rumus `Nilai / Max`, sedangkan untuk kriteria Cost digunakan rumus `Min / Nilai`. Setiap hasil normalisasi dikalikan dengan bobot, lalu dijumlahkan menjadi skor akhir.
+dan menampilkan proses perhitungan metode SMART secara detail. Untuk kriteria Benefit digunakan rumus `(Nilai - Min) / (Max - Min)`, sedangkan untuk kriteria Cost digunakan rumus `(Max - Nilai) / (Max - Min)`. Hasil utilitas setiap kriteria dikalikan dengan bobot, lalu dijumlahkan menjadi skor akhir.
 
 ---
 
