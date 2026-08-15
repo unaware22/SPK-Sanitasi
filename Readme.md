@@ -291,13 +291,13 @@ Gambar ini menampilkan dataset 34 provinsi Indonesia yang digunakan sebagai data
 
 #### 3. Hasil Perangkingan dan Visualisasi Grafik
 
-![Hasil Perangkingan](./docs/screenshots/03-hasil-perangkingan.png)
+![Hasil Perangkingan](./docs/screenshots/03-hasil-perangkingan-dan-visualisasi-grafik.png)
 
 Gambar ini menampilkan hasil akhir perhitungan dalam bentuk tabel ranking. Setiap provinsi memiliki skor SAW dan skor SMART. User dapat membandingkan perbedaan urutan prioritas berdasarkan dua metode tersebut dan menampilkan perbandingan skor SAW dan SMART dalam bentuk bar chart. Grafik membantu melihat perbedaan skor antar-provinsi secara visual sehingga hasil ranking lebih mudah dianalisis.
 
 #### 4. Rincian Langkah Perhitungan SAW dan SMART
 
-![Rincian Perhitungan SAW](./docs/screenshots/05-rincian-saw.png)
+![Rincian Perhitungan SAW](./docs/screenshots/04-rincian-saw-dan-smart.png)
 
 Gambar ini menampilkan proses perhitungan metode SAW secara detail. Untuk kriteria Benefit digunakan rumus `Nilai / Max`, sedangkan untuk kriteria Cost digunakan rumus `Min / Nilai`. Setiap hasil normalisasi dikalikan dengan bobot, lalu dijumlahkan menjadi skor akhir.
 dan menampilkan proses perhitungan metode SMART secara detail. Untuk kriteria Benefit digunakan rumus `(Nilai - Min) / (Max - Min)`, sedangkan untuk kriteria Cost digunakan rumus `(Max - Nilai) / (Max - Min)`. Hasil utilitas setiap kriteria dikalikan dengan bobot, lalu dijumlahkan menjadi skor akhir.
