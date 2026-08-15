@@ -279,31 +279,11 @@ SPK-Sanitasi/
 
 #### 1. Input Bobot Kriteria
 
-Letakkan screenshot bagian input bobot sebagai:
-
-```text
-docs/screenshots/01-input-bobot.png
-```
-
-```md
-![Input Bobot Kriteria](./docs/screenshots/01-input-bobot.png)
-```
-
 ![Input Bobot Kriteria](./docs/screenshots/01-input-bobot.png)
 
 Gambar ini menampilkan form utama untuk mengatur bobot enam kriteria penilaian. Setiap kriteria memiliki kode, nama kriteria, atribut Cost/Benefit, input bobot, dan keterangan. Total bobot harus bernilai `1.00` agar perhitungan SAW dan SMART dapat dijalankan.
 
 #### 2. Dataset Awal
-
-Letakkan screenshot bagian dataset awal sebagai:
-
-```text
-docs/screenshots/02-dataset-awal.png
-```
-
-```md
-![Dataset Awal](./docs/screenshots/02-dataset-awal.png)
-```
 
 ![Dataset Awal](./docs/screenshots/02-dataset-awal.png)
 
@@ -311,31 +291,11 @@ Gambar ini menampilkan dataset 34 provinsi Indonesia yang digunakan sebagai data
 
 #### 3. Hasil Perangkingan dan Visualisasi Grafik
 
-Letakkan screenshot tabel hasil ranking sebagai:
-
-```text
-docs/screenshots/03-hasil-perangkingan-dan-visualisasi-grafik.png
-```
-
-```md
-![Hasil Perangkingan](./docs/screenshots/03-hasil-perangkingan.png)
-```
-
 ![Hasil Perangkingan](./docs/screenshots/03-hasil-perangkingan.png)
 
 Gambar ini menampilkan hasil akhir perhitungan dalam bentuk tabel ranking. Setiap provinsi memiliki skor SAW dan skor SMART. User dapat membandingkan perbedaan urutan prioritas berdasarkan dua metode tersebut dan menampilkan perbandingan skor SAW dan SMART dalam bentuk bar chart. Grafik membantu melihat perbedaan skor antar-provinsi secara visual sehingga hasil ranking lebih mudah dianalisis.
 
 #### 4. Rincian Langkah Perhitungan SAW dan SMART
-
-Letakkan screenshot rincian SAW sebagai:
-
-```text
-docs/screenshots/05-rincian-saw-dan-smart.png
-```
-
-```md
-![Rincian Perhitungan SAW](./docs/screenshots/05-rincian-saw.png)
-```
 
 ![Rincian Perhitungan SAW](./docs/screenshots/05-rincian-saw.png)
 
